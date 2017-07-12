@@ -1,0 +1,14 @@
+{
+  "name": "clscrapr",
+  "version": "1.0.0",
+  "description": "node.js app to scrape craiglists for information on co-housing ads",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Colin Rabyniuk",
+  "license": "ISC",
+  "dependencies": {
+    
+  }
+}
