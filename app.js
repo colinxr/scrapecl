@@ -30,7 +30,7 @@ const options = {
 
 
 // Get Listings based off configuration
-client.list(options)
+client.search(options, 'cohousing')
   .then((listings) => {
 
     let entries = [];
@@ -66,7 +66,7 @@ client.list(options)
 
           let listing = new Listing(data);
 
-          console.log('listing object description: ' + listing.desc);
+          console.log('listing object description: ' + data);
 
           listing.save(function(err){
             if (err) return err;
