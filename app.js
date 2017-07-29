@@ -10,7 +10,6 @@ const cheerio    = require('cheerio');
 require('dotenv').config();
 
 let urls = [];
-let queryNum;
 
 let options = {
   uri: 'https://www.googleapis.com/customsearch/v1?q=cohousing&cx=006186647395206535033%3Ayn35ydj3ohe',
@@ -37,6 +36,7 @@ rp(options)
   .then(data => {
     let results = data.searchInformation.totalResults; // gets total number of results
     let queryNum = Math.floor(results / data.items.length); // finds number of queries we'll need to use to get all of the results. Math.floor is used because we've already done one query.
+
     let queryVars = {
       options: options,
       queryNum: queryNum
@@ -47,7 +47,7 @@ rp(options)
 
     return queryVars;
   })
-  .then(function(queryVars){
+  .then(queryVars => {
     let queries = [];
 
     let start = 11;
@@ -55,7 +55,7 @@ rp(options)
     let queryOptions = queryVars.options;
     let queryNum = queryVars.queryNum;
 
-    for (var i = 0; i < queryNum; i++ ){
+    for (var i = 0; i < 1; i++ ){ //only loop through twice in development. in production use queryNum value
 
       queryOptions.qs.start = start;
       start += 10;
