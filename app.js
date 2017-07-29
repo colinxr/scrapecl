@@ -1,105 +1,78 @@
+const fs         = require('fs');
 const mongoose   = require('mongoose');
-const craigslist = require('node-craigslist');
 const async 	   = require('async');
-const request    = require('request');
+const rp         = require('request-promise');
+const errors     = require('request-promise/errors');
 const cheerio    = require('cheerio');
 
+
 // import environmental variables from our variables.env file
-require('dotenv').config({ path: 'variables.env' });
+require('dotenv').config();
 
-// Connect to our Database and handle an bad connections
-mongoose.connect(process.env.DATABASE);
-mongoose.Promise = global.Promise; // Tell Mongoose to use ES6 promises
-mongoose.connection.on('error', (err) => {
-  console.error(`${err.message}`);
-});
+let urls = [];
 
-require(__dirname + '/models/Listing');
-Listing = mongoose.model('Listing');
+let options = {
+  uri: 'https://www.googleapis.com/customsearch/v1?q=cohousing&cx=006186647395206535033%3Ayn35ydj3ohe&key=' + process.env.KEY,
+  headers: {
+    'User-Agent': 'Request-Promise'
+  },
+    json: true
+};
 
+rp(options)
+  .then(data => {
+    let arr = data.items;
 
-//node-craigslist configuration
-const client = new craigslist.Client({
-  city: 'Toronto',
-});
+    arr.forEach(function (res, i){
+      let link = arr[i].link;
 
-const options = {
-  baseHost: 'craigslist.ca',
-  category: 'apa'
-}
+      urls.push(link);
+    })
+  })
+  .then(function(){
 
+    console.log(urls);
 
-// Get Listings based off configuration
-client.search(options, 'cohousing')
-  .then((listings) => {
+    urls.forEach(function(url, i){
+      let options = {
+        uri: urls[i],
+        simple: false,
 
-    let entries = [];
-
-    // for each listing get base data, then open up request from listning url and scrape the rest of the data.
-    listings.forEach((listing) => {
-      let data = {};
-      data.pid   = listing.pid;
-      data.title = listing.title;
-      data.price = listing.price;
-      data.url   = listing.url;
-
-      async.series([
-        function(callback){
-          request(data.url, function(err, res, html){
-            if (!err) var $ = cheerio.load(html);
-
-            data.desc = ($('#postingbody').text() || '').trim();
-            data.mapurl = $('div.mapbox p.mapaddress')
-        		  .find('a')
-        		   .attr('href');
-
-            $('#thumbs').find('a').each((i, el) => {
-              data.images = data.images || [];
-             	data.images.push(($(el).attr('href') || '').trim());
-             });
-
-            callback();
-          })
-        },
-
-        function(callback){
-
-          let listing = new Listing(data);
-
-          console.log('listing object description: ' + data);
-
-          listing.save(function(err){
-            if (err) return err;
-          })
+        transform: function (body) {
+          transform2xxOnly = true;
+          return cheerio.load(body);
         }
-      ], function(err){
-        if (err) return err;
+      };
+
+      rp(options)
+      .then(function($) {
+
+        if ($('.postingtitle').length > 0){
+          let details = {};
+
+          let pid = urls[i].substring(urls[i].search(/[0-9]*\.html/)).replace(/\.html/, '');
+
+          details.url = urls[i];
+          details.pid = pid;
+          details.title = ($('#titletextonly').text() || '').trim();
+          details.desc = ($('#postingbody').text() || '').trim();
+          details.lat = $('#map').attr('data-latitude');
+          details.long = $('#map').attr('data-longitude');
+
+          console.log(details);
+        }
+
       })
-      //console.log(listing); // log all of the listing values
-      //console.log(listing.price); get specific value, found here: https://github.com/brozeph/node-craigslist/blob/master/src/index.js
+      .catch(errors.StatusCodeError, function (reason) {
+        // The server responded with a status codes other than 2xx.
+        // Check reason.statusCode
+        console.log(reason.statusCode);
+      })
+      .catch(errors.RequestError, function (reason) {
+        // The request failed due to technical reasons.
+        // reason.cause is the Error object Request would pass into a callback.
+        console.log(reason.cause);
+	     });
     });
   })
-  .catch((err) => {
-    console.log(err);
-  });
-
-// Get All of the Listings -> Just Basic Info Tho
-
-/*client.list(options)
-  .then((listings) => {
-    listings.forEach((listing)) => console.log(listing);
-  })
-  .catch((err) => {
-    console.log(err);
-  });
-
-// get full details on one listing
-client.list(options)
-  .then((listings) => client.details(listings[0]))
-  .then((details) => {
-    console.log(details);
-  })
-  .catch((err) => {
-    console.log(err);
-  });
-  */
+  .catch((err) => { console.error(err); })

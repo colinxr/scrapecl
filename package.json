@@ -12,8 +12,9 @@
     "async": "~2.5.0",
     "cheerio": "~1.0.0-rc.2",
     "dotenv": "~4.0.0",
+    "express": "latest",
     "mongoose": "~4.11.2",
-    "node-craigslist": "~1.1.2",
-    "request": "~2.81.0"
+    "request": "~2.81.0",
+    "request-promise": "~4.2.1"
   }
 }
