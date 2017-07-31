@@ -1,6 +1,7 @@
 const fs         = require('fs');
 const mongoose   = require('mongoose');
 const async 	   = require('async');
+const Bluebird   = require('bluebird');
 const rp         = require('request-promise');
 const errors     = require('request-promise/errors');
 const cheerio    = require('cheerio');
@@ -23,7 +24,6 @@ let options = {
     json: true
 };
 
-
 let getUrls = (arr) => {
   arr.forEach((res, i) => {
     let link = arr[i].link;
@@ -35,42 +35,41 @@ let getUrls = (arr) => {
 rp(options)
   .then(data => {
     let results = data.searchInformation.totalResults; // gets total number of results
-    let queryNum = Math.floor(results / data.items.length); // finds number of queries we'll need to use to get all of the results. Math.floor is used because we've already done one query.
+    let queryNum = Math.floor(results / data.items.length); // finds number of queryList we'll need to use to get all of the results. Math.floor is used because we've already done one query.
 
     let queryVars = {
       options: options,
       queryNum: queryNum
     } // sets queryVars object in order to pass down the promise chain.
 
-    let arr = data.items;
-    getUrls(arr); // push data.
-
     return queryVars;
   })
-  .then(queryVars => {
-    let queries = [];
+  .then((queryVars) =>{
+    let queryList = [];
 
-    let start = 11;
+    let start = 1;
 
     let queryOptions = queryVars.options;
     let queryNum = queryVars.queryNum;
 
-    for (var i = 0; i < 1; i++ ){ //only loop through twice in development. in production use queryNum value
+    for (var i = 0; i < 3; i++ ){ //only loop through twice in development. in production use queryNum value
 
       queryOptions.qs.start = start;
       start += 10;
 
-      queries.push(rp(queryOptions));
+      queryList.push(rp(queryOptions)); // sets array with request objects
     }
 
-    console.log(queries);
+    Bluebird.map(queryList, function(data){
 
-  /*  Promise.all(queries)
-    .then((data) => {
+      let arr = data.items;
       getUrls(arr);
-      console.log(urls.length);
+      result++;
+
     })
-    .catch(err => console.log(err));  // First rejected promise*/
+    .then(function(){
+      console.log(urls)
+    });
   })
   .then(function(){
 
