@@ -24,7 +24,7 @@ let options = {
     json: true
 };
 
-const setQueryVars = (json) => {
+const setQueryParams = (json) => {
   let results = json.searchInformation.totalResults; // sets total number of results
   let queryNum = Math.ceil(results / json.items.length)// finds number of queryList we'll need to use to get all of the results.
 
@@ -38,7 +38,7 @@ const setQueryVars = (json) => {
 
 const getUrls = (arr) => {
   arr.forEach((res, i) => {
-    let link = arr[i].link;
+    let link = arr[i].link; // arr.link is the Google Custom Search Result URL -> data.items.link
 
     return urls.push(link);
   });
@@ -70,7 +70,7 @@ const searchList = (obj) => {
 }
 
 rp(options)
-  .then(setQueryVars(body))
+  .then(setQueryParams(body))
   .then(searchList(queryVars))
   .then(function(){
 
