@@ -24,7 +24,7 @@ let options = {
     json: true
 };
 
-let getUrls = (arr) => {
+const getUrls = (arr) => {
   arr.forEach((res, i) => {
     let link = arr[i].link;
 
@@ -32,7 +32,7 @@ let getUrls = (arr) => {
   });
 }
 
-let setQueryVars = (json) => {
+const setQueryVars = (json) => {
   let results = json.searchInformation.totalResults; // sets total number of results
   let queryNum = Math.ceil(results / json.items.length)// finds number of queryList we'll need to use to get all of the results.
 
@@ -44,7 +44,7 @@ let setQueryVars = (json) => {
   return queryVars;
 }
 
-let searchList = (obj) => {
+const searchList = (obj) => {
   let queryList = [];
 
   let start = 1;
