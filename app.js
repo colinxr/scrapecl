@@ -26,7 +26,7 @@ let options = {
 
 const setQueryParams = (json) => {
   let results = json.searchInformation.totalResults; // sets total number of results
-  let queryNum = Math.ceil(results / json.items.length)// finds number of queryList we'll need to use to get all of the results.
+  let queryNum = Math.ceil(results / json.items.length)// finds number of searchList we'll need to use to get all of the results.
 
   let queryVars = {
     options: options,
@@ -59,6 +59,8 @@ const searchList = (obj) => {
 
     queryList.push(rp(queryOptions)); // sets array with request objects
   }
+
+  //Split this into separate function?
 
   Bluebird.map(queryList, function(data){ // takes queryList array and iterates over each entry, applying the getUrls() function to it.
     let arr = data.items;
