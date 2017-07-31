@@ -24,14 +24,6 @@ let options = {
     json: true
 };
 
-const getUrls = (arr) => {
-  arr.forEach((res, i) => {
-    let link = arr[i].link;
-
-    return urls.push(link);
-  });
-}
-
 const setQueryVars = (json) => {
   let results = json.searchInformation.totalResults; // sets total number of results
   let queryNum = Math.ceil(results / json.items.length)// finds number of queryList we'll need to use to get all of the results.
@@ -42,6 +34,14 @@ const setQueryVars = (json) => {
   } // sets queryVars object in order to pass down the promise chain.
 
   return queryVars;
+}
+
+const getUrls = (arr) => {
+  arr.forEach((res, i) => {
+    let link = arr[i].link;
+
+    return urls.push(link);
+  });
 }
 
 const searchList = (obj) => {
