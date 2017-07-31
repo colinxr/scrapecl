@@ -32,48 +32,49 @@ let getUrls = (arr) => {
   });
 }
 
-rp(options)
-  .then(data => {
-    let results = data.searchInformation.totalResults; // gets total number of results
-    let queryNum = Math.floor(results / data.items.length); // finds number of queryList we'll need to use to get all of the results. Math.floor is used because we've already done one query.
+let setQueryVars = (json) => {
+  let results = json.searchInformation.totalResults; // sets total number of results
+  let queryNum = Math.ceil(results / json.items.length)// finds number of queryList we'll need to use to get all of the results.
 
-    let queryVars = {
-      options: options,
-      queryNum: queryNum
-    } // sets queryVars object in order to pass down the promise chain.
+  let queryVars = {
+    options: options,
+    queryNum: queryNum
+  } // sets queryVars object in order to pass down the promise chain.
 
-    return queryVars;
-  })
-  .then((queryVars) =>{
-    let queryList = [];
+  return queryVars;
+}
 
-    let start = 1;
+let searchList = (obj) => {
+  let queryList = [];
 
-    let queryOptions = queryVars.options;
-    let queryNum = queryVars.queryNum;
+  let start = 1;
 
-    for (var i = 0; i < 3; i++ ){ //only loop through twice in development. in production use queryNum value
+  let queryOptions = obj.options;
+  let queryNum = obj.queryNum;
 
-      queryOptions.qs.start = start;
-      start += 10;
+  for (var i = 0; i < 3; i++ ){ //only loop through twice in development. in production use queryNum value
 
-      queryList.push(rp(queryOptions)); // sets array with request objects
-    }
+    queryOptions.qs.start = start;
+    start += 10;
 
-    Bluebird.map(queryList, function(data){
+    queryList.push(rp(queryOptions)); // sets array with request objects
+  }
 
-      let arr = data.items;
-      getUrls(arr);
-      result++;
-
-    })
-    .then(function(){
-      console.log(urls)
-    });
+  Bluebird.map(queryList, function(data){ // takes queryList array and iterates over each entry, applying the getUrls() function to it.
+    let arr = data.items;
+    getUrls(arr);
   })
   .then(function(){
+    console.log(urls)
+  });
+}
 
-    // convert section to this? https://stackoverflow.com/questions/32463692/use-promises-for-multiple-node-requests 
+rp(options)
+  .then(setQueryVars(body))
+  .then(searchList(queryVars))
+  .then(function(){
+
+    // convert section to this? https://stackoverflow.com/questions/32463692/use-promises-for-multiple-node-requests
     urls.forEach((url, i) => {
       let options = {
         uri: urls[i],
