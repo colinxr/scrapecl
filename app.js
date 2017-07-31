@@ -73,6 +73,7 @@ rp(options)
   })
   .then(function(){
 
+    // convert section to this? https://stackoverflow.com/questions/32463692/use-promises-for-multiple-node-requests 
     urls.forEach((url, i) => {
       let options = {
         uri: urls[i],
@@ -99,7 +100,6 @@ rp(options)
           details.lat = $('#map').attr('data-latitude');
           details.long = $('#map').attr('data-longitude');
 
-          //console.log(details);
         }
 
       })
