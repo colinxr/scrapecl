@@ -10,6 +10,18 @@ const cheerio    = require('cheerio');
 // import environmental variables from our variables.env file
 require('dotenv').config();
 
+mongoose.connect();
+var promise = mongoose.connect(process.env.DATABASE, {
+  useMongoClient: true,
+});
+mongoose.Promise = require('bluebird');
+mongoose.connection.on('error', (err) => {
+  console.error(`${err.message}`);
+});
+
+//import Listing model
+require('./models/Listing');
+
 let urls = [];
 
 let options = {
@@ -24,18 +36,6 @@ let options = {
     json: true
 };
 
-const setQueryParams = (json) => {
-  let results = json.searchInformation.totalResults; // sets total number of results
-  let queryNum = Math.ceil(results / json.items.length)// finds number of searchList we'll need to use to get all of the results.
-
-  let queryVars = {
-    options: options,
-    queryNum: queryNum
-  } // sets queryVars object in order to pass down the promise chain.
-
-  return queryVars;
-}
-
 const getUrls = (arr) => {
   arr.forEach((res, i) => {
     let link = arr[i].link; // arr.link is the Google Custom Search Result URL -> data.items.link
@@ -44,36 +44,44 @@ const getUrls = (arr) => {
   });
 }
 
-const searchList = (obj) => {
-  let queryList = [];
-
-  let start = 1;
-
-  let queryOptions = obj.options;
-  let queryNum = obj.queryNum;
-
-  for (var i = 0; i < 3; i++ ){ //only loop through twice in development. in production use queryNum value
-
-    queryOptions.qs.start = start;
-    start += 10;
-
-    queryList.push(rp(queryOptions)); // sets array with request objects
-  }
-
-  //Split this into separate function?
-
-  Bluebird.map(queryList, function(data){ // takes queryList array and iterates over each entry, applying the getUrls() function to it.
-    let arr = data.items;
-    getUrls(arr);
-  })
-  .then(function(){
-    console.log(urls)
-  });
-}
-
 rp(options)
-  .then(setQueryParams(body))
-  .then(searchList(queryVars))
+  .then(data => {
+    let results = data.searchInformation.totalResults; // sets total number of results
+    let queryNum = Math.ceil(results / data.items.length)// finds number of searchList we'll need to use to get all of the results.
+
+    let queryVars = {
+      options: options,
+      queryNum: queryNum
+    } // sets queryVars object in order to pass down the promise chain.
+
+    return queryVars;
+  })
+  .then(queryVars => {
+    let queryList = [];
+
+    let start = 1;
+
+    let queryOptions = queryVars.options;
+    let queryNum = queryVars.queryNum;
+
+    for (var i = 0; i < 1; i++ ){ //only loop through twice in development. in production use queryNum value
+
+      queryOptions.qs.start = start;
+      start += 10;
+
+      queryList.push(rp(queryOptions)); // sets array with request objects
+    }
+
+    //Split this into separate function?
+
+    Bluebird.map(queryList, function(data){ // takes queryList array and iterates over each entry, applying the getUrls() function to it.
+      let arr = data.items;
+      getUrls(arr);
+    })
+    .then(function(){
+      console.log(urls)
+    });
+  })
   .then(function(){
 
     // convert section to this? https://stackoverflow.com/questions/32463692/use-promises-for-multiple-node-requests
@@ -106,16 +114,9 @@ rp(options)
         }
 
       })
-      .catch(errors.StatusCodeError, function (reason) {
-        // The server responded with a status codes other than 2xx.
-        // Check reason.statusCode
-        console.log(reason.statusCode);
+      .then(details => {
+        console.log(details);
       })
-      .catch(errors.RequestError, function (reason) {
-        // The request failed due to technical reasons.
-        // reason.cause is the Error object Request would pass into a callback.
-        console.log(reason.cause);
-	     });
     });
   })
   .catch((err) => { console.error(err); })
