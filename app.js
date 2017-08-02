@@ -44,7 +44,7 @@ const getUrls = (arr) => {
   });
 }
 
-rp(options)
+rp(options) // Initial Custom Search Engine Query
   .then(data => {
     let results = data.searchInformation.totalResults; // sets total number of results
     let queryNum = Math.ceil(results / data.items.length)// finds number of searchList we'll need to use to get all of the results.
@@ -58,9 +58,7 @@ rp(options)
   })
   .then(queryVars => {
     let queryList = [];
-
     let start = 1;
-
     let queryOptions = queryVars.options;
     let queryNum = queryVars.queryNum;
 
@@ -81,12 +79,12 @@ rp(options)
     .then(function(){
       console.log(urls);
       // convert section to this? https://stackoverflow.com/questions/32463692/use-promises-for-multiple-node-requests
-      urls.forEach((url, i) => {
+      urls.forEach((url, i) => { // for each url in Urls object open up a new rp with the following options
         let options = {
           uri: urls[i],
           simple: false,
 
-          transform: function (body) {
+          transform: function (body) { //only open up 2xx responses
             transform2xxOnly = true;
             return cheerio.load(body);
           }
@@ -97,7 +95,7 @@ rp(options)
 
           let details = {};
 
-          if ($('.postingtitle').length > 0){
+          if ($('.postingtitle').length > 0){// is true if post exists nad has not been deleted, removed, flagged, etc.
 
             let pid = urls[i].substring(urls[i].search(/[0-9]*\.html/)).replace(/\.html/, '');
 
@@ -107,18 +105,12 @@ rp(options)
             details.desc = ($('#postingbody').text() || '').trim();
             details.lat = $('#map').attr('data-latitude');
             details.long = $('#map').attr('data-longitude');
-
           }
 
-          /*if (!details.pid) {
-            console.log('no post at this url');
-          } else {
-            console.log(details);
-          }*/
           return details;
         })
         .then(details => {
-          if (!details.pid) {
+          if (!details.pid) { // if details object is set. 
             console.log('no post at this url');
           } else {
             console.log('success');
