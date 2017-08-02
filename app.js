@@ -78,12 +78,8 @@ rp(options)
       let arr = data.items;
       getUrls(arr);
     })
-    .then(function(){
-      console.log(urls)
-    });
   })
   .then(function(){
-
     // convert section to this? https://stackoverflow.com/questions/32463692/use-promises-for-multiple-node-requests
     urls.forEach((url, i) => {
       let options = {
@@ -112,10 +108,10 @@ rp(options)
           details.long = $('#map').attr('data-longitude');
 
         }
-
+        console.log(details.pid);
       })
       .then(details => {
-        console.log(details);
+        console.log('wtf');
       })
     });
   })
