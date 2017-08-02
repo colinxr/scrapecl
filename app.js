@@ -110,7 +110,7 @@ rp(options) // Initial Custom Search Engine Query
           return details;
         })
         .then(details => {
-          if (!details.pid) { // if details object is set. 
+          if (!details.pid) { // if details object is set.
             console.log('no post at this url');
           } else {
             console.log('success');
