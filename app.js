@@ -20,7 +20,7 @@ mongoose.connection.on('error', (err) => {
 });
 
 //import Listing model
-require('./models/Listing');
+const Listing = require('./models/Listing');
 
 let urls = [];
 
@@ -64,7 +64,7 @@ rp(options)
     let queryOptions = queryVars.options;
     let queryNum = queryVars.queryNum;
 
-    for (var i = 0; i < 1; i++ ){ //only loop through twice in development. in production use queryNum value
+    for (var i = 0; i < 6; i++ ){ //only loop through twice in development. in production use queryNum value
 
       queryOptions.qs.start = start;
       start += 10;
@@ -78,41 +78,56 @@ rp(options)
       let arr = data.items;
       getUrls(arr);
     })
-  })
-  .then(function(){
-    // convert section to this? https://stackoverflow.com/questions/32463692/use-promises-for-multiple-node-requests
-    urls.forEach((url, i) => {
-      let options = {
-        uri: urls[i],
-        simple: false,
+    .then(function(){
+      console.log(urls);
+      // convert section to this? https://stackoverflow.com/questions/32463692/use-promises-for-multiple-node-requests
+      urls.forEach((url, i) => {
+        let options = {
+          uri: urls[i],
+          simple: false,
 
-        transform: function (body) {
-          transform2xxOnly = true;
-          return cheerio.load(body);
-        }
-      };
+          transform: function (body) {
+            transform2xxOnly = true;
+            return cheerio.load(body);
+          }
+        };
 
-      rp(options)
-      .then(function($) {
+        rp(options)
+        .then(function($) {
 
-        if ($('.postingtitle').length > 0){
           let details = {};
 
-          let pid = urls[i].substring(urls[i].search(/[0-9]*\.html/)).replace(/\.html/, '');
+          if ($('.postingtitle').length > 0){
 
-          details.url = urls[i];
-          details.pid = pid;
-          details.title = ($('#titletextonly').text() || '').trim();
-          details.desc = ($('#postingbody').text() || '').trim();
-          details.lat = $('#map').attr('data-latitude');
-          details.long = $('#map').attr('data-longitude');
+            let pid = urls[i].substring(urls[i].search(/[0-9]*\.html/)).replace(/\.html/, '');
 
-        }
-        console.log(details.pid);
-      })
-      .then(details => {
-        console.log('wtf');
-      })
-    });
+            details.url = urls[i];
+            details.pid = pid;
+            details.title = ($('#titletextonly').text() || '').trim();
+            details.desc = ($('#postingbody').text() || '').trim();
+            details.lat = $('#map').attr('data-latitude');
+            details.long = $('#map').attr('data-longitude');
+
+          }
+
+          /*if (!details.pid) {
+            console.log('no post at this url');
+          } else {
+            console.log(details);
+          }*/
+          return details;
+        })
+        .then(details => {
+          if (!details.pid) {
+            console.log('no post at this url');
+          } else {
+            console.log('success');
+            let listing = new Listing(details);
+
+            listing.save();
+          }
+        })
+      });
+    })
   })
   .catch((err) => { console.error(err); })

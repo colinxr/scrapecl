@@ -16,10 +16,10 @@ var ListingSchema = new Schema({
   },
 	title: {type: String},
   location: {type: String},
-  longitude: {type: String},
-  latitude: {type: String},
+  long: {type: String},
+  lat: {type: String},
   date: {type: Date},
-  description: {type: String}
+  desc: {type: String}
 });
 
 module.exports = mongoose.model('Listing', ListingSchema);
