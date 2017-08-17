@@ -26,7 +26,7 @@ const Listing = require('./models/Listing');
 let urls = [];
 
 let options = {
-  uri: 'https://www.googleapis.com/customsearch/v1?q=cohousing&cx=006186647395206535033%3Ayn35ydj3ohe',
+  uri: process.env.URL,
   qs: {
     'key': process.env.KEY,
     'start': 1
