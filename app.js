@@ -12,7 +12,6 @@ const cheerio    = require('cheerio');
 // import environmental variables from our variables.env file
 require('dotenv').config();
 
-mongoose.connect();
 var promise = mongoose.connect(process.env.DATABASE, {
   useMongoClient: true,
 });
@@ -52,6 +51,9 @@ rp(options) // Initial Custom Search Engine Query
     let results = data.searchInformation.totalResults; // sets total number of results
     let queryNum = Math.floor(results / data.items.length)// finds number of searchList we'll need to use to get all of the results.
 
+    console.log(results);
+    console.log(queryNum);
+
     console.log('Initial Query');
 
     let queryVars = {
@@ -80,14 +82,21 @@ rp(options) // Initial Custom Search Engine Query
     console.log('Requesting JSON');
 
     //Split this into separate function?
-    Bluebird.map(queryList, function(data){ // takes queryList array and iterates over each entry, applying the getUrls() function to it.
-
-      if (data.searchInformation.totalResults > 0){
+    Bluebird.some(queryList, queryList.length)
+      .spread(function(data){ // takes queryList array and iterates over each entry, applying the getUrls() function to it.
         let arr = data.items;
         getUrls(arr);
-      }
 
-    })
+        if (data.nextPage.length < 1){ //if no next page exists
+          console.log('no results anymore');
+          return false;
+        }
+      })
+      .catch(Bluebird.AggregateError, function(err) {
+          err.forEach(function(e) {
+              console.error(e.stack);
+          });
+      })
     .catch(err => console.log(err))
     .then(function(){
       // convert section to this? https://stackoverflow.com/questions/32463692/use-promises-for-multiple-node-requests
@@ -131,7 +140,7 @@ rp(options) // Initial Custom Search Engine Query
               console.log(details.url);
               console.log(imgSrc);
 
-              details.imgs = imgSrc.map((src) => {
+              /*details.imgs = imgSrc.map((src) => {
                 imgObj = {};
 
                 let uri = urlMod.parse(src);
@@ -143,13 +152,13 @@ rp(options) // Initial Custom Search Engine Query
                 imgObj.contentType = 'image/jpg';
 
                 return imgObj;
-              });
+              });*/
             }
           }
 
           return details;
         })
-        .catch(err => console.log(err))
+        //.catch(err => console.log(err))
         .then(details => {
           if (!details.pid) { // if details object is set.
             console.log('no post at this url');
@@ -163,4 +172,4 @@ rp(options) // Initial Custom Search Engine Query
       });
     })
   })
-  .catch((err) => { console.error(err); })
+.catch(err => console.log(err));
