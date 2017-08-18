@@ -32,7 +32,7 @@ let options = {
   headers: {
     'User-Agent': 'Request-Promise'
   },
-    json: true
+  json: true
 };
 
 const getUrls = (arr) => {
@@ -46,7 +46,7 @@ const getUrls = (arr) => {
 rp(options) // Initial Custom Search Engine Query
   .then(data => {
     let results = data.searchInformation.totalResults; // sets total number of results
-    let queryNum = Math.ceil(results / data.items.length)// finds number of searchList we'll need to use to get all of the results.
+    let queryNum = Math.floor(results / data.items.length)// finds number of searchList we'll need to use to get all of the results.
 
     let queryVars = {
       options: options,
@@ -61,19 +61,35 @@ rp(options) // Initial Custom Search Engine Query
     let queryOptions = queryVars.options;
     let queryNum = queryVars.queryNum;
 
-    for (var i = 0; i < 6; i++ ){ //only loop through twice in development. in production use queryNum value
+    queryOptions.simple = false;
 
-      queryOptions.qs.start = start;
+    console.log(queryOptions);
+
+    for (var i = 0; i < queryNum; i++ ){ //only loop through twice in development. in production use queryNum value
+
+      queryOptions.qs.start = start
       start += 10;
 
       queryList.push(rp(queryOptions)); // sets array with request objects
     }
 
+    console.log(queryList);
+
+    console.log('queryList length: ' + queryList.length);
     //Split this into separate function?
 
     Bluebird.map(queryList, function(data){ // takes queryList array and iterates over each entry, applying the getUrls() function to it.
-      let arr = data.items;
-      getUrls(arr);
+
+      if (data.searchInformation.totalResults > 0){
+        let arr = data.items;
+        getUrls(arr);
+      } else {
+        console.log('nada');
+      }
+
+    })
+    .catch((reason) => {
+      console.log(reason);
     })
     .then(function(){
       console.log(urls);
@@ -83,7 +99,7 @@ rp(options) // Initial Custom Search Engine Query
           uri: urls[i],
           simple: false,
 
-          transform: function (body) { //only open up 2xx responses
+          transform: function(body) { //only open up 2xx responses
             transform2xxOnly = true;
             return cheerio.load(body);
           }
