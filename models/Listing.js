@@ -14,16 +14,12 @@ var ListingSchema = new Schema({
     required: true,
     unique: true
   },
-	title: { type: String },
-  location: { type: String },
-  long: { type: String },
-  lat: { type: String },
-  date: { type: Date },
-  desc: { type: String} ,
-  imgs: [{
-    data: Buffer,
-    contentType: String
-  }]
+	title: {type: String},
+  location: {type: String},
+  long: {type: String},
+  lat: {type: String},
+  date: {type: Date},
+  desc: {type: String}
 });
 
 module.exports = mongoose.model('Listing', ListingSchema);
