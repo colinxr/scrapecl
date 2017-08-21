@@ -10,7 +10,7 @@ const cheerio    = require('cheerio');
 // import environmental variables from our variables.env file
 require('dotenv').config();
 
-var promise = mongoose.connect(process.env.DATABASE, {
+let promise = mongoose.connect(process.env.DATABASE, {
   useMongoClient: true,
 });
 mongoose.Promise = require('bluebird');
@@ -22,6 +22,14 @@ mongoose.connection.on('error', (err) => {
 const Listing = require('./models/Listing');
 
 let urls = [];
+
+const getUrls = (arr) => {
+  arr.forEach((res, i) => {
+    let link = arr[i].link; // arr.link is the Google Custom Search Result URL -> data.items.link
+
+    return urls.push(link);
+  });
+}
 
 let options = {
   uri: process.env.URL,
@@ -35,16 +43,9 @@ let options = {
   json: true
 };
 
-const getUrls = (arr) => {
-  arr.forEach((res, i) => {
-    let link = arr[i].link; // arr.link is the Google Custom Search Result URL -> data.items.link
-
-    return urls.push(link);
-  });
-}
-
 rp(options) // Initial Custom Search Engine Query
   .then(data => {
+    console.log('initial request');
     let results = data.searchInformation.totalResults; // sets total number of results
     let queryNum = Math.floor(results / data.items.length)// finds number of searchList we'll need to use to get all of the results.
 
@@ -56,41 +57,48 @@ rp(options) // Initial Custom Search Engine Query
     return queryVars;
   })
   .then(queryVars => {
-    let queryList = [];
+    console.log('getting urls for promises');
+    let queries = [];
     let start = 1;
     let queryOptions = queryVars.options;
     let queryNum = queryVars.queryNum;
 
     queryOptions.simple = false;
+    queryOptions.transform2xxOnly = true;
+    queryOptions.transformWithFullResponse = true;
 
-    console.log(queryOptions);
-
-    for (var i = 0; i < queryNum; i++ ){ //only loop through twice in development. in production use queryNum value
+    for (let i = 0; i < queryNum; i++ ){ //only loop through twice in development. in production use queryNum value
 
       queryOptions.qs.start = start
       start += 10;
 
-      queryList.push(rp(queryOptions)); // sets array with request objects
+      queries.push(rp(queryOptions)); // sets array with request objects
     }
 
-    console.log(queryList);
+    console.log('queries length: ' + queries.length);
+    // Split this into separate function?
 
-    console.log('queryList length: ' + queryList.length);
-    //Split this into separate function?
+    let promises = queries.map(query => rp(query));
 
-    Bluebird.map(queryList, function(data){ // takes queryList array and iterates over each entry, applying the getUrls() function to it.
+    Bluebird.all(promises).then((responses) => {
+      console.log(responses);
 
-      if (data.searchInformation.totalResults > 0){
-        let arr = data.items;
-        getUrls(arr);
-      } else {
-        console.log('nada');
-      }
+      responses.map((page) => {
 
+        if (page.error) console.log('error here');
+
+        if (page.searchInformation.totalResults > 0) {
+          console.log('fuck yeah');
+          let arr = page.items;
+          getUrls(arr);
+        } else {
+          console.log('nothing to see here');
+        }
+      }); // end of responses.map();
     })
-    .catch((reason) => {
-      console.log(reason);
-    })
+    /*.catch((err) => {
+      console.error(err);
+    }) */// error handling for Bluebird.all();
     .then(function(){
       console.log(urls);
       // convert section to this? https://stackoverflow.com/questions/32463692/use-promises-for-multiple-node-requests
@@ -128,13 +136,22 @@ rp(options) // Initial Custom Search Engine Query
           if (!details.pid) { // if details object is set.
             console.log('no post at this url');
           } else {
-            console.log('success');
-            let listing = new Listing(details);
+            let query = Listing.find({pid: details.pid}, {pid: 1}).limit(1);
 
-            listing.save();
-          }
+            if (!query) {
+              console.log('success');
+              let listing = new Listing(details);
+
+              listing.save();
+            } else {
+              console.log('entry already exists');
+            }
+          } // if no details.pid
         })
-      });
+      });// end of urls.forEach
+    })
+    .catch(errors.StatusCodeError, (reason) => {
+      console.log('Error: ' + reason.statusCode);
     })
   })
 .catch(err => console.log(err));
