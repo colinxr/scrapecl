@@ -1,8 +1,9 @@
 const mongoose = require('mongoose');
+const rp       = require('request-promise');
 const Listing  = require('./models/Listing');
 
 
-exports.init = (json) => {
+const init = json => {
   console.log('initial request');
   let results = json.searchInformation.totalResults; // sets total number of results
   let queryNum = Math.floor(results / json.items.length)// finds number of searchList we'll need to use to get all of the results.
@@ -25,12 +26,12 @@ exports.init = (json) => {
   return queryVars;
 }
 
-exports.queryPush = (queryVars) => {
+const queryPush = obj => {
   console.log('getting urls for promises');
   let queries = [];
   let start = 1;
-  let queryOptions = queryVars.options;
-  let queryNum = queryVars.queryNum;
+  let queryOptions = obj.options;
+  let queryNum = obj.queryNum;
 
   queryOptions.simple = false;
   queryOptions.transform2xxOnly = true;
@@ -50,112 +51,62 @@ exports.queryPush = (queryVars) => {
   return queries;
 }
 
-exports.promises = (queries) => {
+module.exports = {
+  getUrls: (arr, urls) => {
+    arr.forEach((res, i) => {
+      let link = arr[i].link; // arr.link is the Google Custom Search Result URL -> data.items.link
 
-  let promises = queries.map(query => rp(query));
+      urls.push(link);
 
-  Bluebird.all(promises)
-    .then((responses) => {
-      responses.map((page) => {
+      return urls;
+    });
+  },
+  init: json => {
+    console.log('initial request');
+    let results = json.searchInformation.totalResults; // sets total number of results
+    let queryNum = Math.floor(results / json.items.length)// finds number of searchList we'll need to use to get all of the results.
 
-        if (page.error) console.log('error here');
+    let queryVars = {
+      options: {
+        uri: process.env.URL,
+        qs: {
+          'key': process.env.KEY,
+          'start': 1
+        },
+        headers: {
+          'User-Agent': 'Request-Promise'
+        },
+        json: true
+      },
+      queryNum: queryNum
+    } // sets queryVars object in order to pass down the promise chain.
 
-        if (page.searchInformation.totalResults > 0) {
-          console.log('fuck yeah');
-          let arr = page.items;
-          getUrls(arr);
-        } else {
-          console.log('nothing to see here');
-        }
-      }); // end of responses.map();
-    })
-    .catch((err) => {
-      console.error(err);
-    }) // error handling for Bluebird.all();
-    .then(function(){
-        console.log(urls);
-        // convert section to this? https://stackoverflow.com/questions/32463692/use-promises-for-multiple-node-requests
+    return queryVars;
+  },
 
-        urls.forEach((url, i) => { // for each url in Urls object open up a new rp with the following options
-          let options = {
-            uri: urls[i],
-            simple: false,
+  queryPush: obj => {
+    console.log('getting urls for promises');
+    let queries = [];
+    let start = 1;
+    let queryOptions = obj.options;
+    let queryNum = obj.queryNum;
 
-            transform: function(body) { //only open up 2xx responses
-              transform2xxOnly = true;
-              return cheerio.load(body);
-            }
-          };
+    queryOptions.simple = false;
+    queryOptions.transform2xxOnly = true;
+    queryOptions.transformWithFullResponse = true;
 
-          rp(options)
-          .then(function($){
+    for (let i = 0; i < queryNum; i++ ){ //only loop through twice in development. in production use queryNum value
 
-            let details = {};
+      queryOptions.qs.start = start;
+      start += 10;
 
-            if ($('.postingtitle').length > 0){// is true if post exists nad has not been deleted, removed, flagged, etc.
+      queries.push(rp(queryOptions)); // sets array with request objects
+    }
 
-              let pid = urls[i].substring(urls[i].search(/[0-9]*\.html/)).replace(/\.html/, '');
+    console.log('queries length: ' + queries.length);
+    // Split this into separate function?
 
-              details.url = urls[i];
-              details.pid = pid;
-              details.title = ($('#titletextonly').text() || '').trim();
-              details.desc = ($('#postingbody').text() || '').trim();
-              details.lat = $('#map').attr('data-latitude');
-              details.long = $('#map').attr('data-longitude');
+    return queries;
+  },
 
-              // populate posting photos
-            	$('#thumbs').find('a').each((i, el) => {
-            		details.imgs = details.imgs || [];
-            		details.imgs.push(($(el).attr('href') || '').trim());
-            	});
-            }
-
-            return details;
-          })
-          .then(details => {
-            if (!details.pid && !details.imgs){
-              console.log('no images');
-            } else {
-              let dir = './imgs/' + details.pid;
-
-              if (!fs.existsSync(dir)){
-                fs.mkdirSync(dir);
-              }
-
-              let imgs = details.imgs;
-
-              imgs.forEach((img, i) => {
-                let options = {
-                  uri: img,
-                  simple: false
-                };
-
-                let file = img.substr(img.lastIndexOf('/') + 1);
-
-                rp(options)
-                  .pipe(fs.createWriteStream(dir + '/' + file));
-
-              });
-            }
-
-            return details;
-
-          })
-          .then(details => {
-            if (!details.pid) { // if details object is set.
-              console.log('no post at this url');
-            } else {
-              console.log('success');
-
-              // if pid exists update
-              let listing = new Listing(details);
-
-              listing.save();
-            } // if no details.pid
-          })
-        });// end of urls.forEach
-      })
-      .catch(errors.StatusCodeError, (reason) => {
-        console.log('Error: ' + reason.statusCode);
-      })
 }

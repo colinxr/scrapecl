@@ -22,7 +22,6 @@ mongoose.connection.on('error', (err) => {
 const Listing = require('./models/Listing');
 const scrape = require('./scrape');
 
-
 let urls = [];
 
 const getUrls = (arr) => {
@@ -50,7 +49,7 @@ rp(options) // Initial Custom Search Engine Query
     return scrape.init(data)
   })
   .then(queryVars => {
-    console.log('getting urls for promises');
+    /*console.log('getting urls for promises');
     let queries = [];
     let start = 1;
     let queryOptions = queryVars.options;
@@ -71,30 +70,31 @@ rp(options) // Initial Custom Search Engine Query
     console.log('queries length: ' + queries.length);
     // Split this into separate function?
 
-    return queries;
+    return queries;*/
+    return scrape.queryPush(queryVars);
   })
-  .then(queries => { 
+  .then(queries => {
     let promises = queries.map(query => rp(query));
 
     Bluebird.all(promises)
-      .then((responses) => {
-        responses.map((page) => {
+      .then(responses => {
+        responses.map(page => {
 
           if (page.error) console.log('error here');
 
           if (page.searchInformation.totalResults > 0) {
             console.log('fuck yeah');
             let arr = page.items;
-            getUrls(arr);
+            return scrape.getUrls(arr, urls);
           } else {
             console.log('nothing to see here');
           }
         }); // end of responses.map();
       })
-      .catch((err) => {
+      .catch(err => {
         console.error(err);
       }) // error handling for Bluebird.all();
-      .then(function(){
+      .then(urls => {
           console.log(urls);
           // convert section to this? https://stackoverflow.com/questions/32463692/use-promises-for-multiple-node-requests
 
