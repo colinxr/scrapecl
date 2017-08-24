@@ -113,6 +113,11 @@ module.exports = {
     // 1. Check format of arr
     // 2. use .map() to return new array
     // 3. return new array down the chain
+
+    // let urls = arr.map(result => ({
+    //    return result.link;
+    // });
+
     arr.forEach((res, i) => {
       let link = arr[i].link; // arr.link is the Google Custom Search Result URL -> page.items.link
 
