@@ -134,9 +134,7 @@ rp(options) // Initial Custom Search Engine Query
 
         })
         .then(details => {
-          if (!details.pid) { // if details object is set.
-            console.log('no post at this url');
-          } else {
+          if (details.pid) { // if details object is set.
             console.log('success');
 
             // if pid exists update
