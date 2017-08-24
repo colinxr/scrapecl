@@ -63,9 +63,7 @@ rp(options) // Initial Custom Search Engine Query
           return urls;
         }); // end of responses.map();
       })
-      .catch(err => {
-        console.error(err);
-      })
+      .catch(err => console.error(err);)
     }) // error handling for Bluebird.all();
     .then(urls => {
       console.log(urls);

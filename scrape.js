@@ -108,8 +108,13 @@ module.exports = {
   },
 
   getUrls: (arr, urls) => {
+
+    // ToDO
+    // 1. Check format of arr
+    // 2. use .map() to return new array
+    // 3. return new array down the chain
     arr.forEach((res, i) => {
-      let link = arr[i].link; // arr.link is the Google Custom Search Result URL -> data.items.link
+      let link = arr[i].link; // arr.link is the Google Custom Search Result URL -> page.items.link
 
       urls.push(link);
 
