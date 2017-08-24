@@ -2,6 +2,13 @@ const mongoose = require('mongoose');
 const rp       = require('request-promise');
 const Listing  = require('./models/Listing');
 
+const getUrls = (arr) => {
+  arr.forEach((res, i) => {
+    let link = arr[i].link; // arr.link is the Google Custom Search Result URL -> data.items.link
+
+    return urls.push(link);
+  });
+}
 
 const init = json => {
   console.log('initial request');
@@ -52,15 +59,6 @@ const queryPush = obj => {
 }
 
 module.exports = {
-  getUrls: (arr, urls) => {
-    arr.forEach((res, i) => {
-      let link = arr[i].link; // arr.link is the Google Custom Search Result URL -> data.items.link
-
-      urls.push(link);
-
-      return urls;
-    });
-  },
   init: json => {
     console.log('initial request');
     let results = json.searchInformation.totalResults; // sets total number of results
@@ -109,4 +107,29 @@ module.exports = {
     return queries;
   },
 
+  getUrls: (arr, urls) => {
+    arr.forEach((res, i) => {
+      let link = arr[i].link; // arr.link is the Google Custom Search Result URL -> data.items.link
+
+      urls.push(link);
+
+      return urls;
+    });
+  },
+
+  responseMap: responses => {
+    responses.map(page => {
+
+      if (page.error) console.log('error here');
+
+      if (page.searchInformation.totalResults > 0) {
+        console.log('fuck yeah');
+        let arr = page.items;
+        return this.getUrls(arr, urls);
+      } else {
+        console.log('nothing to see here');
+      }
+      return urls;
+    }); // end of responses.map();
+  }
 }
