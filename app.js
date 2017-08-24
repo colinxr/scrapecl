@@ -20,6 +20,8 @@ mongoose.connection.on('error', (err) => {
 
 //import Listing model
 const Listing = require('./models/Listing');
+const scrape = require('./scrape');
+
 
 let urls = [];
 
@@ -45,16 +47,7 @@ let options = {
 
 rp(options) // Initial Custom Search Engine Query
   .then(data => {
-    console.log('initial request');
-    let results = data.searchInformation.totalResults; // sets total number of results
-    let queryNum = Math.floor(results / data.items.length)// finds number of searchList we'll need to use to get all of the results.
-
-    let queryVars = {
-      options: options,
-      queryNum: queryNum
-    } // sets queryVars object in order to pass down the promise chain.
-
-    return queryVars;
+    return scrape.init(data)
   })
   .then(queryVars => {
     console.log('getting urls for promises');
@@ -78,6 +71,9 @@ rp(options) // Initial Custom Search Engine Query
     console.log('queries length: ' + queries.length);
     // Split this into separate function?
 
+    return queries;
+  })
+  .then(queries => { 
     let promises = queries.map(query => rp(query));
 
     Bluebird.all(promises)
@@ -99,68 +95,90 @@ rp(options) // Initial Custom Search Engine Query
         console.error(err);
       }) // error handling for Bluebird.all();
       .then(function(){
-        console.log(urls);
-        // convert section to this? https://stackoverflow.com/questions/32463692/use-promises-for-multiple-node-requests
-        urls.forEach((url, i) => { // for each url in Urls object open up a new rp with the following options
-          let options = {
-            uri: urls[i],
-            simple: false,
+          console.log(urls);
+          // convert section to this? https://stackoverflow.com/questions/32463692/use-promises-for-multiple-node-requests
 
-            transform: function(body) { //only open up 2xx responses
-              transform2xxOnly = true;
-              return cheerio.load(body);
-            }
-          };
+          urls.forEach((url, i) => { // for each url in Urls object open up a new rp with the following options
+            let options = {
+              uri: urls[i],
+              simple: false,
 
-          rp(options)
-          .then(function($) {
+              transform: function(body) { //only open up 2xx responses
+                transform2xxOnly = true;
+                return cheerio.load(body);
+              }
+            };
 
-            let details = {};
+            rp(options)
+            .then(function($){
 
-            if ($('.postingtitle').length > 0){// is true if post exists nad has not been deleted, removed, flagged, etc.
+              let details = {};
 
-              let pid = urls[i].substring(urls[i].search(/[0-9]*\.html/)).replace(/\.html/, '');
+              if ($('.postingtitle').length > 0){// is true if post exists nad has not been deleted, removed, flagged, etc.
 
-              details.url = urls[i];
-              details.pid = pid;
-              details.title = ($('#titletextonly').text() || '').trim();
-              details.desc = ($('#postingbody').text() || '').trim();
-              details.lat = $('#map').attr('data-latitude');
-              details.long = $('#map').attr('data-longitude');
+                let pid = urls[i].substring(urls[i].search(/[0-9]*\.html/)).replace(/\.html/, '');
 
-              // populate posting photos
-            	$('#thumbs').find('a').each((i, el) => {
-            		details.imgs = details.imgs || [];
-            		details.imgs.push(($(el).attr('href') || '').trim());
-            	});
-            }
+                details.url = urls[i];
+                details.pid = pid;
+                details.title = ($('#titletextonly').text() || '').trim();
+                details.desc = ($('#postingbody').text() || '').trim();
+                details.lat = $('#map').attr('data-latitude');
+                details.long = $('#map').attr('data-longitude');
 
-            return details;
-          })
-          .then(details => {
-            if (!details.pid) { // if details object is set.
-              console.log('no post at this url');
-            } else {
+                // populate posting photos
+              	$('#thumbs').find('a').each((i, el) => {
+              		details.imgs = details.imgs || [];
+              		details.imgs.push(($(el).attr('href') || '').trim());
+              	});
+              }
 
-              let query = Listing.find({pid: details.pid}, {pid: 1}).limit(1);
+              return details;
+            })
+            .then(details => {
+              if (!details.pid && !details.imgs){
+                console.log('no images');
+              } else {
+                let dir = './imgs/' + details.pid;
 
-              //console.log(details.imgs)
+                if (!fs.existsSync(dir)){
+                  fs.mkdirSync(dir);
+                }
 
-              if (!query) {
+                let imgs = details.imgs;
+
+                imgs.forEach((img, i) => {
+                  let options = {
+                    uri: img,
+                    simple: false
+                  };
+
+                  let file = img.substr(img.lastIndexOf('/') + 1);
+
+                  rp(options)
+                    .pipe(fs.createWriteStream(dir + '/' + file));
+
+                });
+              }
+
+              return details;
+
+            })
+            .then(details => {
+              if (!details.pid) { // if details object is set.
+                console.log('no post at this url');
+              } else {
                 console.log('success');
+
+                // if pid exists update
                 let listing = new Listing(details);
 
                 listing.save();
-
-              } else {
-                console.log('entry already exists');
-              }
-            } // if no details.pid
-          })
-        });// end of urls.forEach
+              } // if no details.pid
+            })
+          });// end of urls.forEach
+        })
+        .catch(errors.StatusCodeError, (reason) => {
+          console.log('Error: ' + reason.statusCode);
+        })
       })
-      .catch(errors.StatusCodeError, (reason) => {
-        console.log('Error: ' + reason.statusCode);
-      })
-    })
-  .catch(err => console.log(err));
+    .catch(err => console.log(err));
