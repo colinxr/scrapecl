@@ -6,7 +6,6 @@ const rp         = require('request-promise');
 const errors     = require('request-promise/errors');
 const cheerio    = require('cheerio');
 
-
 // import environmental variables from .env file
 require('dotenv').config();
 
@@ -20,6 +19,8 @@ mongoose.connection.on('error', (err) => {
 
 //import Listing model
 const Listing = require('./models/Listing');
+
+//import modules
 const scrape = require('./scrape');
 
 let urls = [];
@@ -40,22 +41,22 @@ rp(options) // Initial Custom Search Engine Query
   .then(data => {
     return scrape.init(data);
   })
-  .then(queryVars => {
+  .then(queryVars => { // Creates an array of request-promises which we pass into next .then();
     return scrape.queryPush(queryVars);
   })
-  .then(queries => {
-    let promises = queries.map(query => rp(query));
+  .then(queries => { // Opens each query brought forward and accesses responses using Bluebird.all();
+    let promises = queries.map(query => rp(query)); //for each query in queries use .map() to open up the request-promise
 
     return Bluebird.all(promises)
-      .then(responses => {
-        responses.map(page => {
+      .then(responses => { //all of the responses are stored in one JSON object I've called responses
+        responses.map(page => { // use .map() to iterate over each item in resposnes, using the .getUrls method to conditionally scrape the craigslist ads from google
 
           if (page.error) console.log('error here');
 
           if (page.searchInformation.totalResults > 0) {
             console.log('fuck yeah');
             let arr = page.items;
-            return scrape.getUrls(arr, urls);
+            return scrape.getUrls(arr, urls); // return an array of craigslist URLs to use in next .then()
           } else {
             console.log('nothing to see here');
           }
@@ -69,7 +70,7 @@ rp(options) // Initial Custom Search Engine Query
     .then(urls => {
       console.log(urls);
 
-      urls.forEach((url, i) => { // for each url in Urls object open up a new rp with the following options
+      urls.forEach((url, i) => { // for each URL in urls object open up a new rp with the following options
         let options = {
           uri: urls[i],
           simple: false,
