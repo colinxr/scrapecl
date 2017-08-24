@@ -116,20 +116,4 @@ module.exports = {
       return urls;
     });
   },
-
-  responseMap: responses => {
-    responses.map(page => {
-
-      if (page.error) console.log('error here');
-
-      if (page.searchInformation.totalResults > 0) {
-        console.log('fuck yeah');
-        let arr = page.items;
-        return this.getUrls(arr, urls);
-      } else {
-        console.log('nothing to see here');
-      }
-      return urls;
-    }); // end of responses.map();
-  }
 }
