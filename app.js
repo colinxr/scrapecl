@@ -20,10 +20,10 @@ mongoose.connection.on('error', (err) => {
 //import Listing model
 const Listing = require('./models/Listing');
 
+let urls = [];
+
 //import modules
 const scrape = require('./scrape');
-
-let urls = [];
 
 let options = {
   uri: process.env.URL,
@@ -49,22 +49,32 @@ rp(options) // Initial Custom Search Engine Query
 
     return Bluebird.all(promises)
       .then(responses => { //all of the responses are stored in one JSON object I've called responses
+
+        console.log('responses: ' + responses);
+
         responses.map(page => { // use .map() to iterate over each item in resposnes, using the .getUrls method to conditionally scrape the craigslist ads from google
 
-          if (page.error) console.log('error here');
+          if (!page.error) {
 
-          if (page.searchInformation.totalResults > 0) {
-            console.log('fuck yeah');
-            let arr = page.items;
-            return scrape.getUrls(arr, urls); // return an array of craigslist URLs to use in next .then()
-          } else {
-            console.log('nothing to see here');
+            if (page.searchInformation.totalResults > 0) {
+              console.log('fuck yeah');
+              //let arr = JSON.stringify(page.items);
+              let arr = page.items;
+
+              return scrape.getUrls(arr, urls);  // return an array of craigslist URLs to use in next .then()
+            } else {
+              console.log('nothing to see here');
+            }
           }
-          return urls;
+
         }); // end of responses.map();
+
+        return urls;
       })
-      .catch(err => console.error(err);)
-    }) // error handling for Bluebird.all();
+      .catch(err => {
+        console.error(err);
+      }) // error handling for Bluebird.all();
+    })
     .then(urls => {
       console.log(urls);
 
@@ -80,9 +90,10 @@ rp(options) // Initial Custom Search Engine Query
         };
 
         rp(options)
-        .then(function($){
+        .then(($, urls) => {
+          return scrape.scrapeCl($);
 
-          let details = {};
+          /*let details = {};
 
           if ($('.postingtitle').length > 0){// is true if post exists nad has not been deleted, removed, flagged, etc.
 
@@ -102,10 +113,12 @@ rp(options) // Initial Custom Search Engine Query
           	});
           }
 
-          return details;
+          return details;*/
         })
         .then(details => {
-          if (!details.pid && !details.imgs){
+          return scrape.getImgs(details);
+
+          /*if (!details.pid && !details.imgs){
             console.log('no images');
           } else {
             let dir = './imgs/' + details.pid;
@@ -130,22 +143,25 @@ rp(options) // Initial Custom Search Engine Query
             });
           }
 
-          return details;
+          return details;*/
 
         })
         .then(details => {
-          if (details.pid) { // if details object is set.
+          return scrape.saveListing(details);
+          /*if (details.pid) { // if details object is set.
             console.log('success');
 
             // if pid exists update
             let listing = new Listing(details);
 
             listing.save();
-          } // if no details.pid
+          } // if no details.pid*/
         })
       });// end of urls.forEach
     })
     .catch(errors.StatusCodeError, (reason) => {
       console.log('Error: ' + reason.statusCode);
     })
-    .catch(err => console.log(err));
+    .catch(err => {
+      console.log(err);
+    });
