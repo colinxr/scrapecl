@@ -90,7 +90,7 @@ rp(options) // Initial Custom Search Engine Query
         };
 
         rp(options)
-        .then(($, urls) => {
+        .then($ => {
           return scrape.scrapeCl($);
 
           /*let details = {};
