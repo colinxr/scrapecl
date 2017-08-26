@@ -49,16 +49,19 @@ rp(options) // Initial Custom Search Engine Query
 
     return Bluebird.all(promises)
       .then(responses => { //all of the responses are stored in one JSON object I've called responses
-
-        console.log('responses: ' + responses);
-
+        return scrape.checkApi(responses);
+      })
+      .then(responses => {
         responses.map(page => { // use .map() to iterate over each item in resposnes, using the .getUrls method to conditionally scrape the craigslist ads from google
+
+          if (page.searchInformation === undefined) {
+            console.log('page.searchInformation still undefined');
+          }
 
           if (!page.error) {
 
             if (page.searchInformation.totalResults > 0) {
               console.log('fuck yeah');
-              //let arr = JSON.stringify(page.items);
               let arr = page.items;
 
               return scrape.getUrls(arr, urls);  // return an array of craigslist URLs to use in next .then()
@@ -71,16 +74,19 @@ rp(options) // Initial Custom Search Engine Query
 
         return urls;
       })
-      .catch(err => {
-        console.error(err);
+      .catch(errors.StatusCodeError, (reason) => {
+        console.log('Error: ' + reason);
       }) // error handling for Bluebird.all();
     })
     .then(urls => {
-      console.log(urls);
+      return scrape.cleanUrls(urls);
+    })
+    .then(listings => {
+      console.log(listings);
 
-      urls.forEach((url, i) => { // for each URL in urls object open up a new rp with the following options
+      listings.forEach((listing, i) => { // for each URL in urls object open up a new rp with the following options
         let options = {
-          uri: urls[i],
+          uri: listing,
           simple: false,
 
           transform: function(body) { //only open up 2xx responses

@@ -1,3 +1,4 @@
+const fs       = require('fs');
 const mongoose = require('mongoose');
 const rp       = require('request-promise');
 const cheerio  = require('cheerio');
@@ -39,7 +40,7 @@ module.exports = {
     queryOptions.transform2xxOnly = true;
     queryOptions.transformWithFullResponse = true;
 
-    for (let i = 0; i < 4; i++ ){ //only loop through twice in development. in production use queryNum value
+    for (let i = 0; i < 2; i++ ){ //only loop through twice in development. in production use queryNum value
 
       queryOptions.qs.start = start;
       start += 10;
@@ -53,13 +54,51 @@ module.exports = {
     return queries;
   },
 
-  getUrls: (arr, urls) => {
+  checkApi: responses => {
+    if (typeof responses[0] === 'object') { // check if responses is an array of objects rather than strings
+      console.log('API fed correct data format');
+      console.log(responses);
+    } else {
+      console.log('it\' a string! fuck!');
 
+      let respObj = [];
+
+      responses.map(str => {
+        JSON.parse(JSON.stringify(str));
+        respObj.push(str);
+        console.log(str);
+      });
+
+      responses = respObj; // overwrite responses object with new, sanitized respObj
+
+      console.log(respObj); //check output is ready to be passed on
+    }
+
+    return responses;
+  },
+
+  getUrls: (arr, urls) => {
     arr.forEach((res, i) => {
       let link = arr[i].link; // arr.link is the Google Custom Search Result URL -> page.items.link
 
       urls.push(link);
     });
+  },
+
+  cleanUrls: urls => {
+    //let listings = [];
+    console.log(urls);
+    let listings = urls.filter(url => {
+      if (url.includes('search')){
+        console.log('this is a search page');
+      }else{
+        console.log('this is a listing page');
+        return url;
+      }
+    });
+
+    //console.log(listings);
+    return listings;
   },
 
   scrapeCl: ($, urls) => {
@@ -69,9 +108,13 @@ module.exports = {
 
     if ($('.postingtitle').length > 0){// is true if post exists nad has not been deleted, removed, flagged, etc.
 
-      let pid = urls[i].substring(urls[i].search(/[0-9]*\.html/)).replace(/\.html/, '');
+      let url = $('link[rel="canonical"]').attr('href');
+      console.log('url: ' + url);
 
-      details.url = urls[i];
+      let pid = url.substring(url.search(/[0-9]*\.html/)).replace(/\.html/, '');
+      console.log('pid: ' + pid);
+
+      details.url = url;
       details.pid = pid;
       details.title = ($('#titletextonly').text() || '').trim();
       details.desc = ($('#postingbody').text() || '').trim();
@@ -85,12 +128,10 @@ module.exports = {
       });
     }
 
-    console.log(pid);
-
     return details;
   },
 
-  getImgs: (details) => {
+  getImgs: details => {
     if (!details.pid && !details.imgs){
       console.log('no images');
     } else {
@@ -112,7 +153,6 @@ module.exports = {
 
         rp(options)
           .pipe(fs.createWriteStream(dir + '/' + file));
-
       });
     }
 

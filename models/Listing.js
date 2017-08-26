@@ -4,7 +4,7 @@ var Schema 	 = mongoose.Schema;
 
 // define our nerd model
 // module.exports allows us to pass this to other files when it is called
-var ListingSchema = new Schema({
+var listingSchema = new Schema({
   pid: {
     type: String,
     unique: true
@@ -14,12 +14,13 @@ var ListingSchema = new Schema({
     required: true,
     unique: true
   },
-	title: {type: String},
+	title:    {type: String},
   location: {type: String},
-  long: {type: String},
-  lat: {type: String},
-  date: {type: Date},
-  desc: {type: String}
+  long:     {type: String},
+  lat:      {type: String},
+  date:     {type: Date},
+  desc:     {type: String}
 });
 
-module.exports = mongoose.model('Listing', ListingSchema);
+
+module.exports = mongoose.model('Listing', listingSchema);
