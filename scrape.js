@@ -40,7 +40,7 @@ module.exports = {
     queryOptions.transform2xxOnly = true;
     queryOptions.transformWithFullResponse = true;
 
-    for (let i = 0; i < 2; i++ ){ //only loop through twice in development. in production use queryNum value
+    for (let i = 0; i < queryNum; i++ ){ //only loop through twice in development. in production use queryNum value
 
       queryOptions.qs.start = start;
       start += 10;
@@ -55,23 +55,41 @@ module.exports = {
   },
 
   checkApi: responses => {
-    if (typeof responses[0] === 'object') { // check if responses is an array of objects rather than strings
+
+    checkObj = (el) => {
+      return typeof el === 'object';
+    };
+
+    //responses.every(checkObj);
+
+    if (responses.every(checkObj)) { // check if responses is an array of objects rather than strings
       console.log('API fed correct data format');
-      console.log(responses);
     } else {
       console.log('it\' a string! fuck!');
 
       let respObj = [];
 
       responses.map(str => {
-        JSON.parse(JSON.stringify(str));
-        respObj.push(str);
-        console.log(str);
-      });
+        escape = obj => {
+          return obj.replace(/\\n/g, "\\n")
+               .replace(/\\'/g, "\\'")
+               .replace(/\\"/g, '\\"')
+               .replace(/\\&/g, "\\&")
+               .replace(/\\r/g, "\\r")
+               .replace(/\\t/g, "\\t")
+               .replace(/\\b/g, "\\b")
+               .replace(/\\f/g, "\\f");
+        };
+
+        let obj = JSON.stringify(str);
+        let formatted = eval('(' + escape(obj) + ')');
+
+        respObj.push(formatted);
+
+      }); // end of .map
 
       responses = respObj; // overwrite responses object with new, sanitized respObj
 
-      console.log(respObj); //check output is ready to be passed on
     }
 
     return responses;
@@ -101,7 +119,7 @@ module.exports = {
     return listings;
   },
 
-  scrapeCl: ($, urls) => {
+  scrapeCl: $ => {
     console.log('opening requests');
 
     let details = {};
@@ -139,21 +157,24 @@ module.exports = {
 
       if (!fs.existsSync(dir)){
         fs.mkdirSync(dir);
+
+        let imgs = details.imgs;
+
+        imgs.forEach((img, i) => {
+          let options = {
+            uri: img,
+            simple: false
+          };
+
+          let file = img.substr(img.lastIndexOf('/') + 1);
+
+          rp(options)
+            .pipe(fs.createWriteStream(dir + '/' + file));
+        });
+      } else {
+        console.log('imgs already downloaded');
       }
 
-      let imgs = details.imgs;
-
-      imgs.forEach((img, i) => {
-        let options = {
-          uri: img,
-          simple: false
-        };
-
-        let file = img.substr(img.lastIndexOf('/') + 1);
-
-        rp(options)
-          .pipe(fs.createWriteStream(dir + '/' + file));
-      });
     }
 
     return details;
@@ -161,12 +182,19 @@ module.exports = {
 
   saveListing: details => {
     if (details.pid) { // if details object is set.
-      console.log('success');
 
-      // if pid exists update
-      let listing = new Listing(details);
+      let query = Listing.findOne({pid: details.pid});
 
-      listing.save();
+      if (!query) {
+        console.log('success');
+
+        // if pid exists update
+        let listing = new Listing(details);
+
+        listing.save();
+      } else {
+        console.log('duplicate entry');
+      }
     } // if no details.pid
   }
 }

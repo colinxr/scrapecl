@@ -96,78 +96,22 @@ rp(options) // Initial Custom Search Engine Query
         };
 
         rp(options)
-        .then($ => {
+        .then($ => { // Scrape craiglist listing for relevant details
           return scrape.scrapeCl($);
-
-          /*let details = {};
-
-          if ($('.postingtitle').length > 0){// is true if post exists nad has not been deleted, removed, flagged, etc.
-
-            let pid = urls[i].substring(urls[i].search(/[0-9]*\.html/)).replace(/\.html/, '');
-
-            details.url = urls[i];
-            details.pid = pid;
-            details.title = ($('#titletextonly').text() || '').trim();
-            details.desc = ($('#postingbody').text() || '').trim();
-            details.lat = $('#map').attr('data-latitude');
-            details.long = $('#map').attr('data-longitude');
-
-            // populate posting photos
-          	$('#thumbs').find('a').each((i, el) => {
-          		details.imgs = details.imgs || [];
-          		details.imgs.push(($(el).attr('href') || '').trim());
-          	});
-          }
-
-          return details;*/
         })
-        .then(details => {
+        .then(details => { // download images to working directory
           return scrape.getImgs(details);
-
-          /*if (!details.pid && !details.imgs){
-            console.log('no images');
-          } else {
-            let dir = './imgs/' + details.pid;
-
-            if (!fs.existsSync(dir)){
-              fs.mkdirSync(dir);
-            }
-
-            let imgs = details.imgs;
-
-            imgs.forEach((img, i) => {
-              let options = {
-                uri: img,
-                simple: false
-              };
-
-              let file = img.substr(img.lastIndexOf('/') + 1);
-
-              rp(options)
-                .pipe(fs.createWriteStream(dir + '/' + file));
-
-            });
-          }
-
-          return details;*/
-
         })
-        .then(details => {
+        .then(details => { // Save Listing object to mongoDB
           return scrape.saveListing(details);
-          /*if (details.pid) { // if details object is set.
-            console.log('success');
-
-            // if pid exists update
-            let listing = new Listing(details);
-
-            listing.save();
-          } // if no details.pid*/
         })
       });// end of urls.forEach
     })
     .catch(errors.StatusCodeError, (reason) => {
       console.log('Error: ' + reason.statusCode);
+      process.exit();
     })
     .catch(err => {
       console.log(err);
+      process.exit();
     });
