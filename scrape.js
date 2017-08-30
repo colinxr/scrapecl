@@ -56,41 +56,17 @@ module.exports = {
 
   checkApi: responses => {
 
-    checkObj = (el) => {
-      console.log(typeof el);
+    checkObj = el => {
       return typeof el === 'object';
     };
 
     if (responses.every(checkObj)) { // check if responses is an array of objects rather than strings
       console.log('API fed correct data format');
     } else {
-      console.log('it\' a string! fuck!');
-
-      let respObj = [];
-
-      responses.map(str => {
-        escape = obj => {
-          return obj.replace(/\\n/g, "\\n")
-               .replace(/\\'/g, "\\'")
-               .replace(/\\"/g, '\\"')
-               .replace(/\\&/g, "\\&")
-               .replace(/\\r/g, "\\r")
-               .replace(/\\t/g, "\\t")
-               .replace(/\\b/g, "\\b")
-               .replace(/\\f/g, "\\f");
-        };
-
-        let obj = JSON.stringify(str);
-        let formatted = eval('(' + escape(obj) + ')');
-
-        respObj.push(formatted);
-
-      }); // end of .map
-
-      responses = respObj; // overwrite responses object with new, sanitized respObj
+      console.log('There\'s a string! Fuck!');
 
     }
-
+    //console.log(responses);
     return responses;
   },
 
@@ -112,8 +88,6 @@ module.exports = {
         return url;
       }
     });
-
-    //console.log(listings);
     return listings;
   },
 
