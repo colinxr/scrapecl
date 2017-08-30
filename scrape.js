@@ -57,10 +57,9 @@ module.exports = {
   checkApi: responses => {
 
     checkObj = (el) => {
+      console.log(typeof el);
       return typeof el === 'object';
     };
-
-    //responses.every(checkObj);
 
     if (responses.every(checkObj)) { // check if responses is an array of objects rather than strings
       console.log('API fed correct data format');
@@ -104,9 +103,8 @@ module.exports = {
   },
 
   cleanUrls: urls => {
-    //let listings = [];
     console.log(urls);
-    let listings = urls.filter(url => {
+    let listings = urls.filter(url => { // takes URLs array and filters out any item that has 'search' in the URL. Returns new Listings array.
       if (url.includes('search')){
         console.log('this is a search page');
       }else{
@@ -124,7 +122,7 @@ module.exports = {
 
     let details = {};
 
-    if ($('.postingtitle').length > 0){// is true if post exists nad has not been deleted, removed, flagged, etc.
+    if ($('.postingtitle').length > 0){// is true if post exists and has not been deleted, removed, flagged, etc.
 
       let url = $('link[rel="canonical"]').attr('href');
       console.log('url: ' + url);
@@ -154,13 +152,12 @@ module.exports = {
       console.log('no images');
     } else {
       let dir = './imgs/' + details.pid;
+      let imgs = details.imgs;
 
-      if (!fs.existsSync(dir)){
+      if (!fs.existsSync(dir)){ // check if directory exists
         fs.mkdirSync(dir);
 
-        let imgs = details.imgs;
-
-        imgs.forEach((img, i) => {
+        imgs.forEach((img, i) => { // for each url ing imgs array, open up a request and write the file to directory
           let options = {
             uri: img,
             simple: false
@@ -174,7 +171,6 @@ module.exports = {
       } else {
         console.log('imgs already downloaded');
       }
-
     }
 
     return details;
@@ -183,9 +179,9 @@ module.exports = {
   saveListing: details => {
     if (details.pid) { // if details object is set.
 
-      let query = Listing.findOne({pid: details.pid});
+      let query = Listing.findOne({pid: details.pid}); // check if listing already exists in mongoose
 
-      if (!query) {
+      if (!query) { // if no listing in directory save the entry
         console.log('success');
 
         // if pid exists update
