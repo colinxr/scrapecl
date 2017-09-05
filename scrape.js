@@ -116,6 +116,8 @@ module.exports = {
         details.imgs = details.imgs || [];
         details.imgs.push(($(el).attr('href') || '').trim());
       });
+    } else {
+      console.log('no post here');
     }
 
     return details;
@@ -153,18 +155,18 @@ module.exports = {
   saveListing: details => {
     if (details.pid) { // if details object is set.
 
-      let query = Listing.findOne({pid: details.pid}); // check if listing already exists in mongoose
+      //let query = Listing.findOne({pid: details.pid}); // check if listing already exists in mongoose
 
-      if (!query) { // if no listing in directory save the entry
+      //if (!query) { // if no listing in directory save the entry
         console.log('success');
 
         // if pid exists update
         let listing = new Listing(details);
 
         listing.save();
-      } else {
-        console.log('duplicate entry');
-      }
+    //  } else {
+        //console.log('duplicate entry');
+      //}
     } // if no details.pid
   }
 }
