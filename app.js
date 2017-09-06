@@ -23,7 +23,8 @@ const Listing = require('./models/Listing');
 let urls = [];
 
 //import modules
-const scrape = require('./scrape');
+const scrape = require('./lib/scrape');
+const analyze = require('./lib/analyze');
 
 let options = {
   uri: process.env.URL,

@@ -22,5 +22,20 @@ var listingSchema = new Schema({
   desc:     {type: String}
 });
 
+/*
+personality: [
+  big_five: [],
+  needs: [],
+  values: [],
+  consumption_preferences: []
+],
+sentiment: [
+  targeted_sentiment: {},
+  document_sentiment: {
+    sentiment_type: type: String,
+    score: type: Integer
+  }
+]
 
+*/
 module.exports = mongoose.model('Listing', listingSchema);
