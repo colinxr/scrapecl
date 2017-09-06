@@ -18,7 +18,7 @@ var listingSchema = new Schema({
   location: {type: String},
   long:     {type: String},
   lat:      {type: String},
-  date:     {type: Date},
+  date:     {type: String},
   desc:     {type: String}
 });
 
