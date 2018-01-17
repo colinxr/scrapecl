@@ -57,6 +57,7 @@ rp(options) // Initial Custom Search Engine Query
 
           if (page.searchInformation === undefined) {
             console.log('page.searchInformation still undefined');
+            return;
           }
 
           if (!page.error) {
@@ -103,9 +104,9 @@ rp(options) // Initial Custom Search Engine Query
         .then(details => { // download images to working directory
           return scrape.getImgs(details);
         })
-        .then(details => {
-          return analyze.persona(details);
-        })
+        // .then(details => {
+          // return analyze.persona(details);
+        // })
         .then(details => { // Save Listing object to mongoDB
           return scrape.saveListing(details);
         })

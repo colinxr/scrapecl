@@ -1,10 +1,10 @@
+const mongoose = require('mongoose');
 // grab the mongoose module
-var mongoose = require('mongoose');
-var Schema 	 = mongoose.Schema;
+const Schema 	 = mongoose.Schema;
 
 // define our nerd model
 // module.exports allows us to pass this to other files when it is called
-var listingSchema = new Schema({
+const listingSchema = new Schema({
   pid: {
     type: String,
     unique: true
@@ -38,4 +38,17 @@ sentiment: [
 ]
 
 */
+
+listingSchema.pre('save', next => {
+  let self = this;
+  Listing.find({pid: self.pid}, (err, docs) => {
+    if (!docs.lenght) {
+      next();
+    } else {
+      console.log('Entry already exists: ', self.pid);
+      next(new Error('Entry Exists!'));
+    }
+  });
+});
+
 module.exports = mongoose.model('Listing', listingSchema);
