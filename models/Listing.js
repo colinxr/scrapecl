@@ -42,7 +42,7 @@ sentiment: [
 listingSchema.pre('save', next => {
   let self = this;
   Listing.find({pid: self.pid}, (err, docs) => {
-    if (!docs.lenght) {
+    if (!docs.length) {
       next();
     } else {
       console.log('Entry already exists: ', self.pid);
